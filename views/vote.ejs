@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liberia Voting Page</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Your One Vote Can Make  Liberia Better! Vote Wisely</h1>
+    </header>
+    <main>
+        <section class="voting-form">
+            <h2>Cast Your Vote</h2>
+            <form id="votingForm" action="/vote_complete" method="post">
+                <label for="voterID">Voter ID:</label>
+                <input type="text" id="voterID" name="voterID" required>
+                
+                <label for="candidate">Select Candidate:</label>
+                <select id="candidate" name="candidate" required>
+                    <option value="" disabled selected>Select a candidate</option>
+                    <option value="Thompson Daiminah">Thompson Daiminah</option>
+                    <option value="George Weah">George Weah</option>
+                    <option value="Alvin Dogba">Alvin Dogba</option>
+                </select>
+                
+                <button type="submit">Submit Vote</button>
+            </form>
+            <p id="resultMessage"></p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 National Election Commission</p>
+    </footer>
+    
+</body>
+</html>

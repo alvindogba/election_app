@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Registration - Election in Liberia</title>
+    <link rel="stylesheet" href="css/party.css">
+</head>
+<body>
+    <header>
+        <h1>Party Registration</h1>
+        <p>Register your political party for the upcoming election in Liberia.</p>
+    </header>
+
+    <main>
+        <form action="/submit_party_registration" method="post" enctype="multipart/form-data">
+            <fieldset>
+                <legend>Party Details</legend>
+                <label for="party-name">Party Name:</label>
+                <input type="text" id="party-name" name="party_name" required>
+
+                <label for="party-abbreviation">Abbreviation:</label>
+                <input type="text" id="party-abbreviation" name="party_abbreviation" required>
+
+                <label for="party-logo">Party Logo:</label>
+                <input type="file" id="party-logo" name="party_logo" required>
+
+                <label for="founded-date">Date Founded:</label>
+                <input type="date" id="founded-date" name="founded_date" required>
+
+                <label for="party-headquarters">Headquarters Address:</label>
+                <textarea id="party-headquarters" name="party_headquarters" rows="3" required></textarea>
+
+                <label for="contact-email">Contact Email:</label>
+                <input type="email" id="contact-email" name="contact_email" required>
+
+                <label for="contact-phone">Contact Phone:</label>
+                <input type="tel" id="contact-phone" name="contact_phone" required>
+            </fieldset>
+
+            <fieldset>
+                <legend>Party Chairman</legend>
+                <label for="chairman-name">Name of Party Chairman:</label>
+                <input type="text" id="chairman-name" name="chairman_name" required>
+
+                <label for="chairman-email">Chairman's Email:</label>
+                <input type="email" id="chairman-email" name="chairman_email" required>
+            </fieldset>
+
+            <fieldset>
+                <legend>President</legend>
+                <label for="president-fullname">President Fullname:</label>
+                <input type="text" id="president-fullname" name="president_fullname">
+                <label for="president-image">President Image</label>
+                <input type="file" id="president-image" name="president_image" required>
+
+            </fieldset>
+
+            <fieldset>
+                <legend>Vice President</legend>
+                <label for="vice-president-fullname">Vice President Fullname:</label>
+                <input type="text" id="vice-president-fullname" name="vice_president_fullname">
+                <label for="vice-president-image">Vice President Image</label>
+                <input type="file" id="vice-president-image" name="vice_president_image" required>
+            </fieldset>
+
+            <button type="submit">Register Party</button>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 National Election Commission of Liberia. All rights reserved.</p>
+    </footer>
+</body>
+</html>
