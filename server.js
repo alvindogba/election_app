@@ -64,7 +64,7 @@ app.get('/', (req, res) => {
 });
 
 // Registration
-app.get('/complete_registration', (req, res) => {
+app.get('/complete_registration', async (req, res) => {
     db.all("SELECT * FROM rows", (err, rows) => {
         if (err) {
             console.error("Error fetching rows:", err.message);
@@ -149,7 +149,17 @@ app.post("/login", async (req, res) => {
         const users = await allAsync('SELECT * FROM users WHERE user_name = ?', [username]);
         const parties = await allAsync("SELECT * FROM party");
 
-        res.render('dashboard', { data: parties });
+        
+        db.all("SELECT * FROM users", (err, voters) => {
+            if (err) {
+                console.error("Error fetching rows:", err.message);
+                return res.status(500).send('Server error.');
+            }
+            res.render('dashboard', { data: parties, voters: voters });
+        });
+        
+
+        
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Error fetching user data.');
@@ -163,6 +173,8 @@ app.get("/vote", (req, res) => {
 
 // Route to handle completed vote
 app.post("/vote_complete", (req, res) => {
+    //Selecting All Voter from user Table
+    
     res.render("dashboard");
 });
 
@@ -221,7 +233,7 @@ const allAsync = (stmt, params) => {
                 reject(err);
             } else {
                 resolve(rows);
-  ``          }
- ``       });
+          }
+        });
     });
-``};
+};

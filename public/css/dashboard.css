@@ -4,6 +4,14 @@
     margin: 0;
     padding: 5px;
     box-sizing: border-box;
+    list-style: none;
+    text-decoration: none;
+}
+
+a{
+    list-style: none;
+    text-decoration: none;
+    color: #333; 
 }
 body {
     font-family: Arial, sans-serif;
@@ -11,19 +19,23 @@ body {
     padding: 0;
 }
 
+#side_bar{
+    width: 20%;
+    height: 80vh;
+    position: sticky;
+    top: 1rem;
+
+}
+
 #sidebar{
-    width: 25%;
-    min-width: 100px;
-    height: 88vh;
-    padding: 1%;
-   
- 
+    height: 100%;
+
 }
 
 /* Into the dashboard */
 #main{
-    width: 98vw;
     display: flex;
+    justify-content: space-between;
 }
 .dashboard_title{
     background-color: blue;
@@ -40,7 +52,7 @@ body {
 
 /* Result Dashboard */
 .result_dashboard{
-    width: 75%;
+    width: 85%;
 }
 .result_dashboard>h1{
     text-align: center;
@@ -51,14 +63,21 @@ display: flex;
 justify-content: space-between;
 }
 
+#reg_voters, #total_voters{
+  
+   width: 48%;
+   padding: 1% 2%;
+}
+
 /* cards */
-.cards{
+ .cards{
     width: 48%;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1%;
     box-shadow:  4px 4px 2px rgb(255, 246, 246);
+    display: none;
  
 }
 
@@ -73,4 +92,11 @@ justify-content: space-between;
 .fa-pencil{
     font-size: 3rem;
     color: rgb(64, 140, 234);
+}
+
+#logout{
+    color: white;
+}
+#logout_container{
+    background-color: red;
 }
