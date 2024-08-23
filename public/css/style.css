@@ -5,6 +5,7 @@ body {
     background-color: #f0f0f0;
     text-align: center;
     padding-top: 40px;
+  
 }
 
 form {
@@ -13,7 +14,7 @@ form {
     background-color: #fff;
     padding: 20px;
     border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+   
 }
 
 label {
@@ -48,13 +49,17 @@ h2 {
 }
 
 /* Voter Form */
-.voting-form {
+.voting-form-section {
     background: #fff;
     padding: 20px;
     border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    max-width: 600px;
+    width: max-content;
     margin: 0 auto;
+}
+
+#votingForm{
+width: 80vw;
+height: 80vh;
 }
 
 label {
@@ -81,18 +86,28 @@ button:hover {
     background-color: #0056b3;
 }
 
-footer {
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    padding: 10px 0;
-    position: fixed;
-    width: 100%;
-    bottom: 0;
-    background-color: #0044cc;
-}
+
 
 /* Log in Page starts here 👇 */
 
 
 /* Log In Page Ends here 👍 */
+
+
+/* Voting Page */
+
+ input[type="radio"] {
+    width: 40px; /* Size of the radio button */
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #000;
+    background: #fff;
+    cursor: pointer;
+}
+
+.candidate_list_container{
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+
+}

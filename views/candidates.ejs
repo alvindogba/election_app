@@ -1,0 +1,24 @@
+<div>
+   <%- include("patials/header") %> 
+    <div id="candidates_container" class="container d-flex justify-content-center gap-5">
+        <% if(locals.candidates){%>
+ <%candidates.forEach(candidate => {%>
+            <div class="card" style="width: 300px;">
+                <img src="/<%=candidate.photo %>" class="card-img-top " alt="...">
+                <div class="card-body text-center">
+                    <h5 class="card-title"><%=candidate.first_name%> <%= candidate.middle_name %> <%=candidate.last_name %></h5>
+               
+                </div>
+            </div>
+        <%}); %>
+       <% }else{%>
+            <h1>No candidate has registered</h1>
+       <%}%>
+       
+    </div>
+   
+</div>
+
+
+
+<%- include("patials/footer") %>

@@ -10,7 +10,12 @@
     <h5 class="card-title mb-1">Registered Voters</h5>
     <p class="card-text mb-0">Total number of registered voters</p>
   </div>
-  <span class="fs-4 ms-3">10</span>
+
+  <span class="fs-4 ms-3"><% if(locals.voters){%>
+    <%= voters.length %>
+  <%} else{%>
+    0
+ <% } %> </span>
 </div>
 
 
@@ -21,7 +26,13 @@
           <h5 class="card-title">Total Votes</h5>
           <p class="card-text">Total number of votes</p>
         </div>
-        <span>10</span>
+        <span>
+          <% if(locals.totalVotes){%>
+            <%= totalVotes.length %>
+          <%} else{%>
+            0
+         <% } %> 
+        </span>
       </div>
     </div>
 
@@ -36,7 +47,7 @@
             <h5 class="card-title"><%= data[0].president_name %></h5>
             <h4 style="color: blue"><%= data[0].abbreviation %></h4>
             <div class="progress" role="progressbar" aria-label="<%= data[0].president_name %> Progress" aria-valuenow="<%= data[0].progress %>" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar bg-info" style="width: <%= data[0].progress %>%"><%= data[0].progress %>%</div>
+              
             </div>
           </div>
         </div>

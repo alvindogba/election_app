@@ -9,16 +9,19 @@ const fs = require('fs');
 const bcrypt = require('bcrypt');
 const { body, validationResult } = require('express-validator'); //Middleware to validate input 
 const dotenv = require('dotenv'); 
+const { error } = require('console');
 dotenv.config(); //exstablishing dontenv to manage port and other setting
 
 const saltRounds = 10; //Amount of rounds password should be bcrypt
 
 db.serialize(() => {
     db.run("CREATE TABLE IF NOT EXISTS auth (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT UNIQUE, password TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, row TEXT, date_of_birth DATE, phone INTEGER, image TEXT, user_name TEXT UNIQUE, password TEXT)");
-   db.run("CREATE TABLE IF NOT EXISTS party (id INTEGER PRIMARY KEY AUTOINCREMENT, party_name TEXT)")
+    db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, row TEXT, date_of_birth DATE, phone INTEGER, image TEXT, user_name TEXT UNIQUE, password TEXT, voted TEXT)");
+    db.run("CREATE TABLE IF NOT EXISTS party (id INTEGER PRIMARY KEY AUTOINCREMENT, party_name TEXT)")
     db.run("CREATE TABLE IF NOT EXISTS rows (id INTEGER PRIMARY KEY AUTOINCREMENT, row TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS candidate (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, position	TEXT, photo	BLOB, party_id	INTEGER)")
+    db.run("CREATE TABLE IF NOT EXISTS candidate (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, position	TEXT, photo	BLOB, party_id	INTEGER)");
+    db.run("CREATE TABLE IF NOT EXISTS votes(id	INTEGER  PRIMARY KEY AUTOINCREMENT, candidate_id	INTEGER NOT NULL UNIQUE, votes TEXT, user_id INTERGER UNIQUE)");
+
 });
 
 
@@ -34,24 +37,24 @@ app.set('view engine', 'ejs');
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = path.join(__dirname, 'public/uploads');
-        if (!fs.existsSync(uploadPath)) {
+        if(!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
         cb(null, uploadPath);
     },
-    filename: (req, file, cb) => {
+    filename:(req, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
     }
 });
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
+    limits:{fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-        if (mimetype && extname) {
+        if(mimetype && extname) {
             return cb(null, true);
         }
         cb(new Error('Only images are allowed!'));
@@ -144,7 +147,7 @@ app.post("/login", async (req, res) => {
         if (!row || !(await bcrypt.compare(password, row.password))) {
             return res.status(401).send('Invalid credentials.');
         }
-
+        
         // Fetch user details and party data
         const users = await allAsync('SELECT * FROM users WHERE user_name = ?', [username]);
         const parties = await allAsync("SELECT * FROM party");
@@ -155,27 +158,98 @@ app.post("/login", async (req, res) => {
                 console.error("Error fetching rows:", err.message);
                 return res.status(500).send('Server error.');
             }
-            res.render('dashboard', { data: parties, voters: voters });
-        });
-        
+            //Fetching All data from votes Table
+            
+           db.all("SELECT * FROM votes", (err, total_votes) =>{
+            if(err){
+                console.error("No one has voted", err.message);
+                return res.status(500).send("Internal Server Error")
+            }
 
-        
+            res.render('dashboard', { data: parties, voters: voters, totalVotes: total_votes });
+           })
+        });
+
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Error fetching user data.');
     }
 });
 
+//All Candidate Routes
+app.get("/candidates", (req, res)=>{
+    db.all("SELECT * FROM candidate", (err, candidates) =>{
+        if(err){
+            console.error("No one has voted", err.message);
+            return res.status(500).send("Internal Server Error")
+        }
+            res.render("candidates", {candidates: candidates})
+       })
+
+})
+
+
+
+let userId;
 // The voting route
-app.get("/vote", (req, res) => {
-    res.render("vote");
+app.get("/cast_vote", (req, res) => {
+    userId = req.query.user_id;
+    db.all("SELECT * FROM candidate", (err, candidates) =>{
+        if (err) {
+            console.error("Error fetching rows:", err.message);
+            return res.status(500).send('Server error.');
+        }
+            res.render("vote", {candidates: candidates});
+        
+})
+
+})
+app.post("/cast_vote_complete", (req, res) => {
+    const candidateId = req.body.voted; // Candidate ID should be passed in the request body
+    console.log(userId, candidateId)
+
+    if (!userId || !candidateId) {
+        res.status(400).send("User ID and candidate ID are required");
+        return;
+    }
+
+    const voteStatus = "true";
+
+    // Update user's vote status
+    db.run("UPDATE users SET voted = ? WHERE id = ?", [voteStatus, userId], function(err) {
+        if (err) {
+            console.error("Database error:", err.message);
+            res.status(500).send("Database error");
+            return;
+        }
+
+        // Insert vote into the votes table
+        db.run("INSERT INTO votes (candidate_id, votes, user_id) VALUES (?,?, ?)", [candidateId, voteStatus, userId], function(err) {
+            if (err) {
+                console.error("Database error:", err.message);
+                res.status(500).send("my Database error");
+                return;
+            }
+
+            res.redirect("/voters"); // Redirect to the voters page
+        });
+    });
 });
 
-// Route to handle completed vote
-app.post("/vote_complete", (req, res) => {
-    //Selecting All Voter from user Table
-    
-    res.render("dashboard");
+
+
+//Route to display all the Register voters
+
+
+app.get("/voters", (req, res)=>{
+    db.all("SELECT * FROM users", (err, voters_data) => {
+        if (err) {
+            console.error("Error fetching rows:", err.message);
+            return res.status(500).send('Server error.');
+        }
+     
+        res.render('voters', {voters_data: voters_data});
+})
 });
 
 // Error handling middleware

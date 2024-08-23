@@ -1,0 +1,42 @@
+<div>
+    <%- include("patials/header") %>
+    <%if(locals.voters_data[0]){%>
+        <div  class="table w-75">
+            <table  class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>First Name</th>
+                        <th>Middle Name</th>
+                        <th>Last Name</th>
+                        <th>Photo</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% voters_data.forEach(voter => {%>
+                        <tr>
+                        <td><%=voter.first_name %></td>
+                        <td><%=voter.middle_name %></td>
+                        <td><%=voter.last_name %></td>
+                        <td><img src="/<%=voter.image %>" alt="" width="100px" height="100px"></td>
+                        <% if(voter.voted === "true"){%>
+                        <td><button disabled>Voted</button></td>
+                       <% } else{%>
+                         <td><button><a href="/cast_vote?user_id=<%=voter.id %>">Select To Vote</a></button></td>
+                      <% } %>
+                       
+                    </tr>
+     
+                    <%}); %>
+                   
+                    <!-- Add more rows as needed -->
+                </tbody>
+            </table>
+        </div>
+  <%  }
+  else{%>
+    <h2>No register voter</h2>
+    <p>Click here to <a href="/complete_registration">Register</a></p></p>
+
+  <%} %>
+</div>

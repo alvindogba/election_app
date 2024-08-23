@@ -15,3 +15,19 @@ selectElement.addEventListener("change", () => {
     }
 });
 
+
+//voting action
+function validateForm() {
+    const checkboxes = document.querySelectorAll('input[name="voted"]');
+    let checked = false;
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            checked = true;
+        }
+    });
+    if (!checked) {
+        alert("Please select a candidate before submitting.");
+        return false;
+    }
+    return true;
+}
