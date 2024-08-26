@@ -44,10 +44,10 @@
                 <input type="password" name="password" id="password" class="form-control" required>
             </div>
             <div class="mb-3">
-                <label for="row-selection" class="form-label">Choose your row:</label>
-                <select id="row-selection" name="row" class="form-select">
-                    <% rowdata.forEach(function(row){ %>
-                        <option value="<%= row.id %>"><%= row.row %></option>
+                <label for="row-selection" class="form-label">Choose your role:</label>
+                <select id="row-selection" name="role" class="form-select">
+                    <% roledata.forEach(function(role){ %>
+                        <option value="<%= role.id %>"><%= role.role %></option>
                     <% }) %>
                 </select>
             </div>

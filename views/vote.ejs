@@ -16,6 +16,7 @@
         <section class="voting-form-section">
             <h2>Cast Your Vote</h2>
             <form id="votingForm" action="/cast_vote_complete" method="post" onsubmit="return validateForm()">
+                <input type="hidden" name="userId" value="<%= userId %>">
                 <div class="candidate_list_container">
                     <% candidates.forEach(candidate => { %>
                         <div class="flex-column align-items-center" >
@@ -24,7 +25,7 @@
                                 Vote for <%= candidate.first_name %> <%= candidate.middle_name %> <%= candidate.last_name %>
                                 <p>Position:</p>
                                 <p>Party:</p>
-                                <div><input type="radio" name="voted" value="<%= candidate.id %>"></div>
+                                <div><input type="radio" name="candidate_id" value="<%= candidate.id %>"></div>
                              
                             </label>
                         </div>

@@ -7,90 +7,75 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
-const { body, validationResult } = require('express-validator'); //Middleware to validate input 
-const dotenv = require('dotenv'); 
-const { error } = require('console');
-dotenv.config(); //exstablishing dontenv to manage port and other setting
+const { body, validationResult } = require('express-validator');
+const dotenv = require('dotenv');
+dotenv.config();
 
-const saltRounds = 10; //Amount of rounds password should be bcrypt
+const saltRounds = 10;
 
+// Initialize database schema
 db.serialize(() => {
-    db.run("CREATE TABLE IF NOT EXISTS auth (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT UNIQUE, password TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, row TEXT, date_of_birth DATE, phone INTEGER, image TEXT, user_name TEXT UNIQUE, password TEXT, voted TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS party (id INTEGER PRIMARY KEY AUTOINCREMENT, party_name TEXT)")
-    db.run("CREATE TABLE IF NOT EXISTS rows (id INTEGER PRIMARY KEY AUTOINCREMENT, row TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS candidate (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, position	TEXT, photo	BLOB, party_id	INTEGER)");
-    db.run("CREATE TABLE IF NOT EXISTS votes(id	INTEGER  PRIMARY KEY AUTOINCREMENT, candidate_id	INTEGER NOT NULL UNIQUE, votes TEXT, user_id INTERGER UNIQUE)");
-
+    db.run("CREATE TABLE IF NOT EXISTS auth (id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT UNIQUE, password TEXT, user_id INTEGER)");
+    db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, role_id INTEGER, date_of_birth DATE, phone INTEGER, image TEXT, user_name TEXT UNIQUE, password TEXT, voted TEXT)");
+    db.run("CREATE TABLE IF NOT EXISTS party (id INTEGER PRIMARY KEY AUTOINCREMENT, party_name TEXT)");
+    db.run("CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT)");
+    db.run("CREATE TABLE IF NOT EXISTS candidate (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT, position_id INTEGER, photo BLOB, party_id INTEGER)");
+    db.run("CREATE TABLE IF NOT EXISTS votes (id INTEGER PRIMARY KEY AUTOINCREMENT, candidate_id INTEGER NOT NULL, votes INTEGER, user_id INTEGER UNIQUE)");
 });
 
-
-
-// Middleware to parse URL-encoded bodies (as sent by HTML forms)
+// Middleware
 app.use(express.urlencoded({ extended: true }));
-// Setting up static directory
 app.use(express.static("public"));
-// Setting up views engine
 app.set('view engine', 'ejs');
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = path.join(__dirname, 'public/uploads');
-        if(!fs.existsSync(uploadPath)) {
+        if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
         cb(null, uploadPath);
     },
-    filename:(req, file, cb) => {
+    filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
     }
 });
-const upload = multer({ 
+const upload = multer({
     storage: storage,
-    limits:{fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-        if(mimetype && extname) {
+        if (mimetype && extname) {
             return cb(null, true);
         }
         cb(new Error('Only images are allowed!'));
     }
 });
 
-// Define a route for the homepage
+// Routes
 app.get('/', (req, res) => {
     res.render('login');
 });
 
-// Registration
 app.get('/complete_registration', async (req, res) => {
-    db.all("SELECT * FROM rows", (err, rows) => {
-        if (err) {
-            console.error("Error fetching rows:", err.message);
-            return res.status(500).send('Server error.');
-        }
-        db.all("SELECT * FROM party", (err, parties) => {
-            if (err) {
-                console.error("Error fetching parties:", err.message);
-                return res.status(500).send('Server error.');
-            }
-            db.all("SELECT * FROM position", (err, positions) => {
-                if (err) {
-                    console.error("Error fetching positions:", err.message);
-                    return res.status(500).send('Server error.');
-                }
-                res.render("voters_registration.ejs", { rowdata: rows, partyData: parties, positionData: positions });
-            });
-        });
-    });
+    try {
+        const [roles, parties, positions] = await Promise.all([
+            allAsync("SELECT * FROM roles"),
+            allAsync("SELECT * FROM party"),
+            allAsync("SELECT * FROM position")
+        ]);
+        res.render("voters_registration", { roledata: roles, partyData: parties, positionData: positions });
+    } catch (err) {
+        console.error("Error fetching data:", err.message);
+        res.status(500).send('Server error.');
+    }
 });
 
-
-app.post('/complete_registration', 
+app.post('/complete_registration',
     upload.single('user_image'),
     [
         body('first_name').notEmpty().withMessage('First name is required'),
@@ -105,169 +90,205 @@ app.post('/complete_registration',
 
         const photoPath = req.file ? path.join('uploads', req.file.filename) : null;
         try {
-            // Hash the password
             const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
-            
-            // Insert the registration data into the tables base on user role
-            if(req.body.row === "3"){
-                const candidate = "INSERT INTO candidate (first_name, middle_name, last_name, position, photo, party_id) VALUES (?, ?, ?, ?, ?, ?)";
-                await runAsync(candidate, [
+            if (req.body.role === "3") {
+                await runAsync("INSERT INTO candidate (first_name, middle_name, last_name, position_id, photo, party_id) VALUES (?, ?, ?, ?, ?, ?)", [
                     req.body.first_name, req.body.middle_name, req.body.last_name, req.body.position, photoPath, req.body.party
                 ]);
-            }else{
-                const stmt = "INSERT INTO users (first_name, middle_name, last_name, row, date_of_birth, phone, image, user_name, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            await runAsync(stmt, [
-                req.body.first_name, req.body.middle_name, req.body.last_name, req.body.row,
-                req.body.date_of_birth, req.body.phone, photoPath,
-                req.body.user_name, hashedPassword
-            ]);
-
+            } else {
+                await runAsync("INSERT INTO users (first_name, middle_name, last_name, role_id, date_of_birth, phone, image, user_name, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                    req.body.first_name, req.body.middle_name, req.body.last_name, req.body.role,
+                    req.body.date_of_birth, req.body.phone, photoPath,
+                    req.body.user_name, hashedPassword
+                ]);
             }
-            
-            // Insert into 'auth' table
             await runAsync("INSERT INTO auth (user_name, password) VALUES (?, ?)", [
                 req.body.user_name, hashedPassword
             ]);
-
             res.render("login");
         } catch (error) {
-            console.error(error.message);
-            res.status(500).send('Server error.');
+            console.error("Registration error:", error.message);
+            res.status(500).send('User name is already taken');
         }
     }
 );
 
-// Route for user login
 app.post("/login", async (req, res) => {
     const { username, password } = req.body;
-
     try {
+        // Fetch user data for authentication
         const row = await getAsync("SELECT * FROM auth WHERE user_name = ?", [username]);
-
+        
         if (!row || !(await bcrypt.compare(password, row.password))) {
             return res.status(401).send('Invalid credentials.');
         }
-        
-        // Fetch user details and party data
-        const users = await allAsync('SELECT * FROM users WHERE user_name = ?', [username]);
-        const parties = await allAsync("SELECT * FROM party");
 
-        
-        db.all("SELECT * FROM users", (err, voters) => {
-            if (err) {
-                console.error("Error fetching rows:", err.message);
-                return res.status(500).send('Server error.');
-            }
-            //Fetching All data from votes Table
-            
-           db.all("SELECT * FROM votes", (err, total_votes) =>{
-            if(err){
-                console.error("No one has voted", err.message);
-                return res.status(500).send("Internal Server Error")
-            }
+        // Fetch total registered voters and total votes
+        const [totalRegVoters, totalVotes] = await Promise.all([
+            getAsync('SELECT COUNT(*) AS total FROM users'),
+            getAsync('SELECT COUNT(*) AS total FROM votes')
+        ]);
 
-            res.render('dashboard', { data: parties, voters: voters, totalVotes: total_votes });
-           })
+        // Fetch candidate information
+        const candidate_info = await allAsync(`
+                    SELECT 
+    candidate.first_name, 
+    candidate.middle_name, 
+    candidate.last_name, 
+    candidate.photo,
+    position.position,
+    party.party_name,
+    COALESCE(SUM(votes.votes), 0) AS votes
+FROM 
+    candidate
+INNER JOIN 
+    position ON candidate.position_id = position.id
+INNER JOIN 
+    party ON candidate.party_id = party.id
+LEFT JOIN 
+    votes ON candidate.id = votes.candidate_id
+WHERE 
+    candidate.position_id = 1
+GROUP BY 
+    candidate.id, candidate.first_name, candidate.middle_name, candidate.last_name, 
+    candidate.photo, position.position, party.party_name;
+        `);
+
+      
+        const cand_votes = await allAsync('SELECT * FROM votes');
+        console.log(cand_votes);
+
+        // Render the dashboard with the fetched data
+        res.render("dashboard", {
+            total_reg_voters: totalRegVoters.total,
+            total_vote: totalVotes.total,
+            candidate_info
         });
-
     } catch (err) {
-        console.error(err.message);
+        console.error("Login error:", err.message);
         res.status(500).send('Error fetching user data.');
     }
 });
 
-//All Candidate Routes
-app.get("/candidates", (req, res)=>{
-    db.all("SELECT * FROM candidate", (err, candidates) =>{
-        if(err){
-            console.error("No one has voted", err.message);
-            return res.status(500).send("Internal Server Error")
-        }
-            res.render("candidates", {candidates: candidates})
-       })
+app.get("/dashboard", async (req, res)=>{
+    try {
 
-})
+        // Fetch total registered voters and total votes
+        const [totalRegVoters, totalVotes] = await Promise.all([
+            getAsync('SELECT COUNT(*) AS total FROM users'),
+            getAsync('SELECT COUNT(*) AS total FROM votes')
+        ]);
+
+        // Fetch candidate information
+        const candidate_info = await allAsync(`
+                   SELECT 
+    candidate.first_name, 
+    candidate.middle_name, 
+    candidate.last_name, 
+    candidate.photo,
+    position.position,
+    party.party_name,
+    COALESCE(SUM(votes.votes), 0) AS votes
+FROM 
+    candidate
+INNER JOIN 
+    position ON candidate.position_id = position.id
+INNER JOIN 
+    party ON candidate.party_id = party.id
+LEFT JOIN 
+    votes ON candidate.id = votes.candidate_id
+WHERE 
+    candidate.position_id = 1
+GROUP BY 
+    candidate.id, candidate.first_name, candidate.middle_name, candidate.last_name, 
+    candidate.photo, position.position, party.party_name;
 
 
+        `);
 
-let userId;
-// The voting route
-app.get("/cast_vote", (req, res) => {
-    userId = req.query.user_id;
-    db.all("SELECT * FROM candidate", (err, candidates) =>{
-        if (err) {
-            console.error("Error fetching rows:", err.message);
-            return res.status(500).send('Server error.');
-        }
-            res.render("vote", {candidates: candidates});
-        
-})
+      
+        const cand_votes = await allAsync('SELECT * FROM votes');
+        console.log(candidate_info);
 
-})
-app.post("/cast_vote_complete", (req, res) => {
-    const candidateId = req.body.voted; // Candidate ID should be passed in the request body
-    console.log(userId, candidateId)
-
-    if (!userId || !candidateId) {
-        res.status(400).send("User ID and candidate ID are required");
-        return;
-    }
-
-    const voteStatus = "true";
-
-    // Update user's vote status
-    db.run("UPDATE users SET voted = ? WHERE id = ?", [voteStatus, userId], function(err) {
-        if (err) {
-            console.error("Database error:", err.message);
-            res.status(500).send("Database error");
-            return;
-        }
-
-        // Insert vote into the votes table
-        db.run("INSERT INTO votes (candidate_id, votes, user_id) VALUES (?,?, ?)", [candidateId, voteStatus, userId], function(err) {
-            if (err) {
-                console.error("Database error:", err.message);
-                res.status(500).send("my Database error");
-                return;
-            }
-
-            res.redirect("/voters"); // Redirect to the voters page
+        // Render the dashboard with the fetched data
+        res.render("dashboard", {
+            total_reg_voters: totalRegVoters.total,
+            total_vote: totalVotes.total,
+            candidate_info
         });
-    });
+    } catch (err) {
+        console.error("Login error:", err.message);
+        res.status(500).send('Error fetching user data.');
+    }
+})
+
+app.get("/candidates", async (req, res) => {
+    try {
+        const candidates = await allAsync("SELECT * FROM candidate WHERE candidate.position_id = 1");
+      
+        res.render("candidates", { candidates });
+    } catch (err) {
+        console.error("Error fetching candidates:", err.message);
+        res.status(500).send('Server error.');
+    }
 });
 
+app.get("/cast_vote", async (req, res) => {
+    const userId = req.query.user_id;
+    try {
+        const candidates = await allAsync("SELECT * FROM candidate WHERE candidate.position_id = 1");
+        res.render("vote", { candidates, userId });
+    } catch (err) {
+        console.error("Error fetching candidates:", err.message);
+        res.status(500).send('Server error.');
+    }
+});
+
+app.post("/cast_vote_complete", async (req, res) => {
+    const { userId, candidate_id } = req.body;
+    console.log(userId, candidate_id)
+    if (!userId || !candidate_id) {
+        return res.status(400).send("User ID and candidate ID are required");
+    }
 
 
-//Route to display all the Register voters
+    const voteStatus = true;
+    try {
+        await runAsync("UPDATE users SET voted =? WHERE id = ?", ["true", userId]);
+        await runAsync("INSERT INTO votes (candidate_id, votes, user_id) VALUES (?, ?, ?)", [candidate_id, voteStatus, userId]);
+        res.redirect("/voters");
+    } catch (err) {
+        console.error("Vote casting error:", err.message);
+        res.status(500).send('Database error.');
+    }
+});
 
-
-app.get("/voters", (req, res)=>{
-    db.all("SELECT * FROM users", (err, voters_data) => {
-        if (err) {
-            console.error("Error fetching rows:", err.message);
-            return res.status(500).send('Server error.');
-        }
-     
-        res.render('voters', {voters_data: voters_data});
-})
+app.get("/voters", async (req, res) => {
+    try {
+        const votersData = await allAsync("SELECT * FROM users");
+        res.render('voters', { voters_data: votersData });
+    } catch (err) {
+        console.error("Error fetching voters:", err.message);
+        res.status(500).send('Server error.');
+    }
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error("Server error:", err.stack);
     res.status(500).send('Something broke!');
 });
 
-// Start the Express server
+// Start server
 app.listen(port, () => {
     console.log(`App is running on port ${port}`);
 });
 
-// Close the database connection when the Node.js process is terminated
+// Close database connection on termination
 process.on('SIGINT', () => {
-    db.close((err) => {
+    db.close(err => {
         if (err) {
-            console.error(err.message);
+            console.error("Error closing database:", err.message);
         } else {
             console.log('Database connection closed.');
         }
@@ -278,7 +299,7 @@ process.on('SIGINT', () => {
 // Helper functions for async database operations
 const runAsync = (stmt, params) => {
     return new Promise((resolve, reject) => {
-        db.run(stmt, params, function(err) {
+        db.run(stmt, params, function (err) {
             if (err) {
                 reject(err);
             } else {
@@ -307,7 +328,7 @@ const allAsync = (stmt, params) => {
                 reject(err);
             } else {
                 resolve(rows);
-          }
+            }
         });
     });
 };

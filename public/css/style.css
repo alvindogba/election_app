@@ -111,3 +111,9 @@ button:hover {
     gap: 2.5rem;
 
 }
+
+@media (max-width: 768px) {
+    #side_bar{
+        display: none;
+    }
+}

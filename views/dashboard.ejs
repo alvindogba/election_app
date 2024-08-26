@@ -11,8 +11,8 @@
     <p class="card-text mb-0">Total number of registered voters</p>
   </div>
 
-  <span class="fs-4 ms-3"><% if(locals.voters){%>
-    <%= voters.length %>
+  <span class="fs-4 ms-3"><% if(locals.total_reg_voters){%>
+    <%= total_reg_voters %>
   <%} else{%>
     0
  <% } %> </span>
@@ -27,8 +27,8 @@
           <p class="card-text">Total number of votes</p>
         </div>
         <span>
-          <% if(locals.totalVotes){%>
-            <%= totalVotes.length %>
+          <% if(locals.total_vote){%>
+            <%= total_vote %>
           <%} else{%>
             0
          <% } %> 
@@ -38,53 +38,37 @@
 
     <div id="section2">
       <h1>Chairman</h1>
+     
+        <div class="container d-flex justify-content-center gap-5 flex-wrap">
+          <% candidate_info.forEach(can_info => {%>
+          <!-- Card 1 -->
+          <div class="card" style="width: 25rem;" id="card">
+            <img src="/<%= can_info.photo %>" alt="Man" id="presidents_image">
+            
+            <div class="card-body">
+              <h2 class="card-title"><%= can_info.first_name %> <%= can_info.middle_name %> <%= can_info.last_name %></h2>
+              <h5>Position: <%= can_info.position %></h5>
+              <h5>Party: <strong><%= can_info.party_name %></strong></h5>
+              <h4>Vote Count: <strong><%= can_info.votes %></strong></h4>
+            
+              <!-- Calculate percentage in server-side code and format it for display -->
+              <% 
+    let percentage = (can_info.votes / total_reg_voters) * 100; 
+    let roundedPercentage = Math.round(percentage); // Rounding to the nearest whole number
+%>
 
-      <div class="container d-flex justify-content-between">
-        <!-- Card 1 -->
-        <div class="card" style="width: 13rem;">
-          <img src="<%= data[0].president_image %>" alt="<%= data[0].president_name %>">
-          <div class="card-body">
-            <h5 class="card-title"><%= data[0].president_name %></h5>
-            <h4 style="color: blue"><%= data[0].abbreviation %></h4>
-            <div class="progress" role="progressbar" aria-label="<%= data[0].president_name %> Progress" aria-valuenow="<%= data[0].progress %>" aria-valuemin="0" aria-valuemax="100">
-              
+              <div class="progress">
+                <div class="progress-bar" role="progressbar" style="width: <%= roundedPercentage %>%;" aria-valuenow="<%= percentage %>" aria-valuemin="0" aria-valuemax="100" id="progress_bar">
+                  <%= roundedPercentage %>%
+                </div>
+              </div>
             </div>
+            
           </div>
+          <%}); %>
         </div>
-
-        <!-- Card 2 -->
-        <div class="card" style="width: 13rem;">
-          <i class="fa-solid fa-circle-user"></i>
-          <div class="card-body">
-            <h5 class="card-title">John Brown</h5>
-            <div class="progress" role="progressbar" aria-label="John Brown Progress" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar bg-warning" style="width: 25%">25%</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 3 -->
-        <div class="card" style="width: 13rem;">
-          <i class="fa-solid fa-circle-user"></i>
-          <div class="card-body">
-            <h5 class="card-title">John Brown</h5>
-            <div class="progress" role="progressbar" aria-label="John Brown Progress" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar bg-success" style="width: 25%">25%</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 4 -->
-        <div class="card" style="width: 13rem;">
-          <i class="fa-solid fa-circle-user"></i>
-          <div class="card-body">
-            <h5 class="card-title">John Brown</h5>
-            <div class="progress" role="progressbar" aria-label="John Brown Progress" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar bg-danger" style="width: 25%">25%</div>
-            </div>
-          </div>
-        </div>
-      </div>
+     
+    
     </div>
   </section>
 </main>
